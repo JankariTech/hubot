@@ -1,3 +1,4 @@
+"use strict"
 const githubUsername = process.env.HUBOT_GITHUB_USERNAME
 const githubToken = process.env.HUBOT_GITHUB_TOKEN
 const organisation = 'owncloud'
