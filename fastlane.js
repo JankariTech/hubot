@@ -10,29 +10,81 @@ const scrummaster = '@me @you'
 
 const interval = intervalInS * 1000
 const auth = Buffer.from(`${githubUsername}:${githubToken}`, 'binary').toString('base64')
+
 module.exports = robot =>
   setInterval(() => {
+    robot.error(function (err, res) {
+      robot.logger.error(err)
+      robot.send({room: room}, `there is an issue with the fastlane bot '${err}'`)
+    })
     robot.http(`https://api.github.com/orgs/${organisation}/projects`)
       .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
       .get()((err, response, body) => {
-          const data = JSON.parse(body).find(function (project) {
+          if (err) {
+            robot.emit('error', `problem getting projects list: '${err}'`)
+            return
+          }
+          let parsedData = {}
+          try {
+            parsedData = JSON.parse(body)
+          } catch (e) {
+            robot.emit('error', `problem parsing '${body}' as JSON`)
+            return
+          }
+
+          if (!Array.isArray(parsedData)) {
+            robot.emit('error', `Response body cannot be parsed to an array. Content: "${body}"`)
+            return
+          }
+
+          const data = parsedData.find(function (project) {
             return project.name === projectName
           })
-          const columnsUrl = data.columns_url
-          robot.http(columnsUrl)
+
+          if (typeof data !== 'object' || typeof data.columns_url !== 'string' ) {
+            robot.emit('error', `could not find project '${projectName}' do you have the right permissions?`)
+            return
+          }
+
+          robot.http(data.columns_url)
             .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
             .get()((err, response, body) => {
-              const data = JSON.parse(body).find(function (column) {
+              if (err) {
+                robot.emit('error', `problem getting columns list: '${err}'`)
+                return
+              }
+              let parsedData = {}
+              try {
+                parsedData = JSON.parse(body)
+              } catch (e) {
+                robot.emit('error', `problem parsing '${body}' as JSON`)
+                return
+              }
+              const data = parsedData.find(function (column) {
                 return column.name === fastLaneColumnName
               })
+              if (typeof data !== 'object' || typeof data.cards_url !== 'string' ) {
+                robot.emit('error', `could not find column '${fastLaneColumnName}'`)
+                return
+              }
               robot.http(data.cards_url)
                 .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
                 .get()((err, response, body) => {
-                  const cards = JSON.parse(body)
+                  if (err) {
+                    robot.emit('error', `problem getting cards list: '${err}'`)
+                    return
+                  }
+                  let cards = {}
+                  try {
+                    cards = JSON.parse(body)
+                  } catch (e) {
+                    robot.emit('error', `problem parsing '${body}' as JSON`)
+                    return
+                  }
                   let text = ''
                   if (cards.length === 1) {
                     text = `is one card`
-                  } else if (cards.length > 1){
+                  } else if (cards.length > 1) {
                     text = `are ${cards.length} cards`
                   } else {
                     return
