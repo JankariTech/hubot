@@ -6,6 +6,7 @@ const projectName = 'Current: QA/CI/TestAutomation'
 const fastLaneColumnName = 'Fastlane'
 const intervalInS = 3600
 const room = 'developers'
+const scrummaster = '@me @you'
 
 const interval = intervalInS * 1000
 const auth = Buffer.from(`${githubUsername}:${githubToken}`, 'binary').toString('base64')
@@ -36,7 +37,7 @@ module.exports = robot =>
                   } else {
                     return
                   }
-                  robot.send({room: room}, `@scrummaster there ${text} in the fastlane`)
+                  robot.send({room: room}, `${scrummaster} there ${text} in the fastlane`)
                   for (var i = 0; i < cards.length; i++) {
                     robot.http(cards[i].content_url)
                       .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
