@@ -6,6 +6,8 @@ const projectName = 'Current: QA/CI/TestAutomation'
 const fastLaneColumnName = 'Fastlane'
 const intervalInS = 3600
 const room = 'developers'
+const teamupCalendarKey = 'ks1c2vhnot2ttfvawo'
+const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
 const scrummaster = '@me @you'
 
 const interval = intervalInS * 1000
@@ -69,7 +71,7 @@ module.exports = robot =>
               }
               robot.http(data.cards_url)
                 .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
-                .get()((err, response, body) => {
+                .get()(async (err, response, body) => {
                   if (err) {
                     robot.emit('error', `problem getting cards list: '${err}'`)
                     return
@@ -89,14 +91,35 @@ module.exports = robot =>
                   } else {
                     return
                   }
-                  robot.send({room: room}, `${scrummaster} there ${text} in the fastlane`)
-                  for (var i = 0; i < cards.length; i++) {
-                    robot.http(cards[i].content_url)
-                      .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
-                      .get()((err, response, body) => {
-                        robot.send({room: room}, JSON.parse(body).html_url)
-                      })
-                  }
+                  const dateString = new Date().toISOString().slice(0,10)
+                  robot.http(`https://api.teamup.com/${teamupCalendarKey}/events?startDate=${dateString}&endDate=${dateString}`)
+                    .headers({'Teamup-Token': teamupToken})
+                    .get()((err, response, body) => {
+                      if (err) {
+                        robot.emit('error', `problem getting scrummaster: '${err}'`)
+                        return
+                      }
+                      let parsedBody = {}
+                      try {
+                        parsedBody = JSON.parse(body)
+                      } catch (e) {
+                        robot.emit('error', `problem parsing '${body}' as JSON`)
+                        return
+                      }
+                      if (typeof parsedBody.events === 'undefined' || parsedBody.events.length === 0) {
+                        robot.emit('error', `problem getting scrummaster: '${body}'`)
+                        return
+                      }
+                      const scrummaster = parsedBody.events[0].title
+                      robot.send({room: room}, `${scrummaster} there ${text} in the fastlane`)
+                      for (var i = 0; i < cards.length; i++) {
+                        robot.http(cards[i].content_url)
+                          .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
+                          .get()((err, response, body) => {
+                            robot.send({room: room}, JSON.parse(body).html_url)
+                          })
+                      }
+                    })
                 })
             })
         }
