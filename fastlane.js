@@ -8,7 +8,6 @@ const intervalInS = 3600
 const room = 'developers'
 const teamupCalendarKey = 'ks1c2vhnot2ttfvawo'
 const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
-const scrummaster = '@me @you'
 
 const interval = intervalInS * 1000
 const auth = Buffer.from(`${githubUsername}:${githubToken}`, 'binary').toString('base64')
@@ -71,7 +70,7 @@ module.exports = robot =>
               }
               robot.http(data.cards_url)
                 .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
-                .get()(async (err, response, body) => {
+                .get()((err, response, body) => {
                   if (err) {
                     robot.emit('error', `problem getting cards list: '${err}'`)
                     return
