@@ -1,0 +1,13 @@
+{
+  "name": "jankaritech",
+  "version": "0.0.0",
+  "private": true,
+  "author": "Artur Neumann <artur@jankaritech.com>",
+  "description": "A bot with different scripts to automate JankariTech workflow",
+  "dependencies": {
+    "node-cron": "^3.0.0"
+  },
+  "engines": {
+    "node": "0.10.x"
+  }
+}
