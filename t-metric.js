@@ -29,7 +29,7 @@ module.exports = (robot) => {
     )
   })
 
-  cron.schedule('30 16 * * 5', () => {
+  cron.schedule('30 12 * * 5', () => {
     tmetricWeeklyReport(
       robot,
       {
