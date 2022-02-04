@@ -39,24 +39,18 @@ module.exports = (robot) => {
     )
   })
 
-  cron.schedule('00 16 31 * *', () => {
-    tmetricMonthlyReport(
-      robot,
-      {
-        outputPrefix: '@all ',
-        outputPostfix: 'Aaphno :tea:-metric :thumbsup:-sanga :straight_ruler:-bhayo?'
-      },
-    )
-  })
-
-  cron.schedule('00 16 28 * *', () => {
-    tmetricMonthlyReport(
-      robot,
-      {
-        outputPrefix: '@all ',
-        outputPostfix: 'Aaphno :tea:-metric :thumbsup:-sanga :straight_ruler:-bhayo?'
-      },
-    )
+  cron.schedule('00 16 28-31 * *', () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(new Date().getDate() + 1)
+    if (tomorrow.getDate() === 1) {
+      tmetricMonthlyReport(
+        robot,
+        {
+          outputPrefix: '@all ',
+          outputPostfix: 'Aaphno :tea:-metric :thumbsup:-sanga :straight_ruler:-bhayo?'
+        },
+      )
+    }
   })
 }
 
