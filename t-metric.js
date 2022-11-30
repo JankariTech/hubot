@@ -34,7 +34,7 @@ module.exports = (robot) => {
       robot,
       {
         outputPrefix: '@all ',
-        outputPostfix: 'Aaphno :tea:-metric :thumbsup:-sanga :straight_ruler:-bhayo?'
+        outputPostfix: 'Aaphno :tea: -metric :thumbsup: -sanga :straight_ruler: -bhayo?'
       },
     )
   })
@@ -47,7 +47,7 @@ module.exports = (robot) => {
         robot,
         {
           outputPrefix: '@all ',
-          outputPostfix: 'Aaphno :tea:-metric :thumbsup:-sanga :straight_ruler:-bhayo?'
+          outputPostfix: 'Aaphno :tea: -metric :thumbsup: -sanga :straight_ruler: -bhayo?'
         },
       )
     }
