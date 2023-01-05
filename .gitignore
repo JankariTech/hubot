@@ -1,0 +1,4 @@
+go-jankari-bot/build
+go-jankari-bot/*.log
+go-jankari-bot/config.yml
+go-jankari-bot/events_tracker.json
