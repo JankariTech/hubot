@@ -1,4 +1,4 @@
-### Jankaritech's rocket.chat bot
+### teamup rocket.chat bot
 
 - Author: Roshan Lamichhane
 
@@ -7,6 +7,8 @@
 - Reminding upcoming meeting events
 
 ### Run locally
+
+*Note*: Make sure that the bot has already been added to channel or room
 
 - Clone the repo and `cd` inside the folder
 - Copy `config.yml.example` to `config.yml` and edit the file as required

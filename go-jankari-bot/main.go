@@ -36,7 +36,7 @@ type EventsForDay struct {
 
 type EventIDWithStartTime struct {
 	EventID   string `json:"event_id"`
-	StartTime string `start_dt`
+	StartTime string `json:"start_dt"`
 }
 type AllEvents struct {
 	DayEvents []EventsForDay `json:"all_events"`
@@ -258,7 +258,7 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 func main() {
 
 	// Setup logger
-	f, err := os.OpenFile("latest.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // 0644 = user can read and write, other and groups can read
+	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // 0644 = user can read and write, other and groups can read
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -276,8 +276,7 @@ func main() {
 		logger.Fatalln("Error while reading configuration file. Please check the error.\n", err.Error())
 	}
 
-	logger.Println("Read the following configuration", config) // TODO: put to logger
-
+	logger.Println("Read the following configuration", config)
 	// Create json file
 	createJSONFile()
 
@@ -351,7 +350,6 @@ func UpadatedLogin(config *Configuration, apiVersion string) (*UpdatedLoginRespo
 		User:     config.Username,
 		Password: config.Password,
 	}
-	//opt, _ := json.Marshal(loginPayload)
 	url := fmt.Sprintf("%s/%s/login", config.URL, apiVersion)
 	client := resty.New()
 	var errMsg interface{}

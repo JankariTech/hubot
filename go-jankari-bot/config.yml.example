@@ -16,7 +16,8 @@ PASSWORD: bot
 # Use ssl(https)?
 USE_SSL: TRUE
 
-# room (Currently supports one)
+# channel/room (Currently supports one)
+# Make sure the bot has already been added to the channel
 ROOM: general
 
 # meeting calendar read-only link (calendar-code)
