@@ -5,7 +5,7 @@
 # Doing so will fail the app to start
 
 # Url of rocket chat server
-URL: http://localhost:3000
+URL: https://rocket.chat:5000
 
 # bot username
 USERNAME: bot
@@ -28,4 +28,15 @@ TOKEN_TEAMUP: jnfjnf993knjnjfnejkfnejnf
 
 # run the bot in every X interval (mins)
 # Keep it between 5 to 10
+# default is 5
 REPEAT_IN: 5
+
+
+# path to keep logfile
+# default LOG_PATH is /tmp folder
+# It will be overriden if logpath flag is provided to bot while running the bot
+LOG_PATH: /tmp
+
+# name for the log file
+# default log file name is teamup-rocket-chat.log
+LOG_FILE_NAME: teamup-rocket-chat.log
