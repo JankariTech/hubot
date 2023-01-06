@@ -1,4 +1,4 @@
-module github.com/roshanlc/go-jankari-bot
+module github.com/jankaritech/hubot/teamup-rocketchat-bot
 
 go 1.19
 

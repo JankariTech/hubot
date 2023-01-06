@@ -1,5 +1,5 @@
-### teamup rocket.chat bot
-
+### teamup-rocket.chat-bot
+- The bot reminds of any upcoming events in teamup calendar(JankariTech's meetings calendar) to the rocket.chat channel
 - Author: Roshan Lamichhane
 
 ### Currently supports
@@ -25,16 +25,15 @@ go run main.go
 - Go supports cross-compiling for multiple platforms
 
 ```bash
-GOARCH=arm GOOS=linux go build -o build/go-jankari-bot 
-
+GOARCH=amd64 GOOS=linux go build -o build/ .
 ```
  - The executable will be inside `build` folder
 
 Here,
 - `GOARCH` = `targeted architecture` <br>
   E.g. amd64, arm
-- `GOOS` = `target operating-system` <br>
-  E.g Linux
+- `GOOS` = `targeted operating-system` <br>
+  E.g. linux,windows
 
 *Note*: See below for more available options
 
