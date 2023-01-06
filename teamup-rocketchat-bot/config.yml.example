@@ -1,0 +1,31 @@
+# Copy this config.yml.example to config.yml 
+# and edit the following details
+#
+# Donot remove or add fields as the configuration is checked strictly
+# Doing so will fail the app to start
+
+# Url of rocket chat server
+URL: http://localhost:3000
+
+# bot username
+USERNAME: bot
+
+# bot password
+PASSWORD: bot
+
+# Use ssl(https)?
+USE_SSL: TRUE
+
+# channel/room (Currently supports one)
+# Make sure the bot has already been added to the channel
+ROOM: general
+
+# meeting calendar read-only link (calendar-code)
+MEETINGS_TEAMUP: someCodeXYZ123jnjn
+
+# teamup token required for api calls
+TOKEN_TEAMUP: jnfjnf993knjnjfnejkfnejnf
+
+# run the bot in every X interval (mins)
+# Keep it between 5 to 10
+REPEAT_IN: 5

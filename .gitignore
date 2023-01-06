@@ -1,0 +1,5 @@
+teamup-rocketchat-bot/build
+teamup-rocketchat-bot/*.log
+teamup-rocketchat-bot/config.yml
+teamup-rocketchat-bot/events_tracker.json
+teamup-rocketchat-bot/todo.md
