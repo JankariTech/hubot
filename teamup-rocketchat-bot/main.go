@@ -267,7 +267,7 @@ func main() {
 	defer f.Close()
 
 	// set this logger to the global variable
-	logger = log.New(f, "JANKARITECH-BOT ", log.Flags())
+	logger = log.New(f, "TEAMUP-ROCKETCHAT-BOT ", log.Flags())
 
 	config, err := readConfig()
 

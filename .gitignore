@@ -1,4 +1,5 @@
-go-jankari-bot/build
-go-jankari-bot/*.log
-go-jankari-bot/config.yml
-go-jankari-bot/events_tracker.json
+teamup-rocketchat-bot/build
+teamup-rocketchat-bot/*.log
+teamup-rocketchat-bot/config.yml
+teamup-rocketchat-bot/events_tracker.json
+teamup-rocketchat-bot/todo.md
