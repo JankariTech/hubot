@@ -73,3 +73,26 @@ The following table shows the possible combinations of GOOS and GOARCH you can u
 | windows | 386 | |
 | windows | amd64 | |
 
+### autostart with systemd
+1. create a file called `/etc/systemd/system/teamup-rocketchat-bot.service` with this content (remember to adjust the path)
+
+```
+[Unit]
+Description=teamup reminder for rocket chat systemd service.
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'cd <path-of-rocketchat-bot>; ./teamup-rocketchat-bot'
+
+[Install]
+WantedBy=multi-user.target
+```
+
+2. adjust permissions
+   `sudo chmod 644 /etc/systemd/system/teamup-rocketchat-bot.service`
+3. enable the systemd script
+   `sudo systemctl enable teamup-rocketchat-bot.service`
+4. start the script
+   `systemctl start teamup-rocketchat-bot.service`
+6. check if it runs
+   `systemctl status teamup-rocketchat-bot.service`
