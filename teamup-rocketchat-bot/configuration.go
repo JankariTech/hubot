@@ -119,7 +119,6 @@ func readConfig(filePath string, isCustomPath bool) (*Configuration, error) {
 		return nil, err
 	}
 
-	// err = yaml.Unmarshal(yamlData, &config)
 	err = yaml.Unmarshal(yamlData, &config)
 
 	if err != nil {

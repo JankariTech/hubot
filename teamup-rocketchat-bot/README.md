@@ -9,7 +9,7 @@
 - The configuration file should have the `yml` extension and the following properties.
 ```bash
 # Url of rocket chat server
-URL: https:rocket.chat
+URL: https://rocket.chat
 
 # bot username
 USERNAME: bot
