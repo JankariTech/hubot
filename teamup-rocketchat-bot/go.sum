@@ -1,5 +1,7 @@
 github.com/badkaktus/gorocket v0.1.3 h1:ON4YQeuHGYdV6CuD759bGUJ8oxTDdhL9PTVH6QYypFg=
 github.com/badkaktus/gorocket v0.1.3/go.mod h1:tR6QXhjPxNQGDGqmiQo+r5hyvw4lkhqx4C6KXiN8KHw=
+github.com/badkaktus/gorocket v0.1.4-0.20230113113406-dbe15ec17d1b h1:WRdrAghxtOclsMVnCx0P+fLKfGRSbLF+ls7LhaXJqoQ=
+github.com/badkaktus/gorocket v0.1.4-0.20230113113406-dbe15ec17d1b/go.mod h1:tR6QXhjPxNQGDGqmiQo+r5hyvw4lkhqx4C6KXiN8KHw=
 github.com/go-resty/resty/v2 v2.7.0 h1:me+K9p3uhSmXtrBZ4k9jcEAfJmuC8IivWHwaLZwPrFY=
 github.com/go-resty/resty/v2 v2.7.0/go.mod h1:9PWDzw47qPphMRFfhsyk0NnSgvluHcljSMVIq3w7q0I=
 github.com/google/go-cmp v0.5.2 h1:X2ev0eStA3AbceY54o37/0PQ/UWqKEiiO2dKL5OPaFM=

@@ -367,20 +367,27 @@ func main() {
 	createJSONFile()
 
 	// login to rocketchat
-	loginResp, err := UpadatedLogin(config, "api/v1")
+	client := gorocket.NewClient(config.URL)
+	loginPayload := gorocket.LoginPayload{
+		User:     config.Username,
+		Password: config.Password,
+	}
+	loginResp, err := client.Login(&loginPayload)
 
 	if err != nil {
 		log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
 		logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
+		return
 	}
 
-	userIDOpt := gorocket.WithUserID(loginResp.Data.UserID)
-	xTokenOpt := gorocket.WithXToken(loginResp.Data.AuthToken)
-
-	chatClient := gorocket.NewWithOptions(config.URL, userIDOpt, xTokenOpt)
+	if loginResp.Status == "error" && loginResp.Message == "Unauthorized" {
+		log.Println("Error while logging. Recieved \"Unauthorized\" response most likely due to invalid rocketChat login credentails.") // Print to stdout
+		logger.Println("Error while logging. Recieved \"Unauthorized\" response most likely due to invalid rocketChat login credentails.")
+		return
+	}
 
 	// run this once before cron job
-	checkForMeetings(config, chatClient)
+	checkForMeetings(config, client)
 
 	// Ticker will send a signal at each specified time period
 	ticker := time.NewTicker(time.Duration(config.RepeatIn) * time.Minute)
@@ -391,10 +398,10 @@ func main() {
 	go func(wg *sync.WaitGroup) {
 
 		// Range over the ticker
-		// Will run each time the ticker ticks, .i.e each 10 mins
+		// Will run each time the ticker ticks, .i.e each 5 mins
 		for range ticker.C {
 			// check for meeting
-			checkForMeetings(config, chatClient)
+			checkForMeetings(config, client)
 
 		}
 		wg.Done()
@@ -404,36 +411,6 @@ func main() {
 	// Wait for the goroutine to complete
 	wg.Wait()
 
-}
-
-func UpadatedLogin(config *Configuration, apiVersion string) (*UpdatedLoginResponse, error) {
-
-	loginPayload := gorocket.LoginPayload{
-		User:     config.Username,
-		Password: config.Password,
-	}
-	url := fmt.Sprintf("%s/%s/login", config.URL, apiVersion)
-	client := resty.New()
-	var errMsg interface{}
-	result := UpdatedLoginResponse{}
-	res, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetHeader("Accept", "application/json").
-		SetBody(loginPayload).
-		SetResult(&result). // set the response to result with required json parsing
-		SetError(&errMsg).
-		Post(url)
-
-	if err != nil {
-		return &result, err
-	} else if res.StatusCode() != 200 {
-		return &result, fmt.Errorf("%v", fmt.Errorf("recieved status code %v with body\n%v", res.StatusCode(), string(res.Body())))
-	} else if result.Status != "success" {
-		return &result, fmt.Errorf("%v", fmt.Errorf("recieved status code %v with body\n%v", res.StatusCode(), string(res.Body())))
-	}
-
-	// success auth
-	return &result, nil
 }
 
 // fetchMeetingEvents fetches events for the day
@@ -573,39 +550,4 @@ func prepareMeetingMsg(event TeamupEvent) string {
 		finalDesc,
 	)
 	return msg
-}
-
-// Some struct definitions
-
-type UpdatedMe struct {
-	ID                    string            `json:"_id"`
-	Services              gorocket.Services `json:"services"`
-	Emails                []gorocket.Email  `json:"emails"`
-	Status                string            `json:"status"`
-	Active                bool              `json:"active"`
-	UpdatedAt             time.Time         `json:"_updatedAt"`
-	Roles                 []string          `json:"roles"`
-	Name                  string            `json:"name"`
-	StatusConnection      string            `json:"statusConnection"`
-	Username              string            `json:"username"`
-	UtcOffset             float64           `json:"utcOffset"`
-	StatusText            string            `json:"statusText"`
-	Settings              gorocket.Settings `json:"settings"`
-	AvatarOrigin          string            `json:"avatarOrigin"`
-	RequirePasswordChange bool              `json:"requirePasswordChange"`
-	Language              string            `json:"language"`
-	Email                 string            `json:"email"`
-	AvatarURL             string            `json:"avatarUrl"`
-}
-
-type UpdatedDataLogin struct {
-	UserID    string    `json:"userId"`
-	AuthToken string    `json:"authToken"`
-	Me        UpdatedMe `json:"me"`
-}
-
-type UpdatedLoginResponse struct {
-	Status  string           `json:"status"`
-	Data    UpdatedDataLogin `json:"data"`
-	Message string           `json:"message,omitempty"`
 }
