@@ -22,10 +22,10 @@ const defaultConfigFileName = "config.yml"
 
 var ErrLogin = errors.New("the login was not successfull most likely due to invalid credentails")
 
-const defaultLogFilePath = "/tmp"
+const defaultLogFilePath = "/var/log"
 const defaultLogFileName = "teamup-rocket-chat.log"
 
-const eventsTrackerFile = "/tmp/events_tracker.json"
+const eventsTrackerFile = "/var/cache/events_tracker.json"
 
 const defaultRepeatIn = 5
 
@@ -240,8 +240,11 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 			fmt.Println("Trying to send the following messge currently:\n", finalMsg)
 			msgSent, err := chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: finalMsg})
 			if err != nil {
-				logger.Println(err)
+				logger.Printf("Failed to send the message due to following error:\n%s", err.Error())
+				log.Printf("Failed to send the message due to following error:\n%s", err.Error()) // Print to stdout
+				return
 			}
+
 			// For checking message sent status
 			fmt.Println("Message send status: ", msgSent.Success, msgSent.Error)
 		}
@@ -287,7 +290,17 @@ func init() {
 	log.Println(logOutput) // Print for the stdout only
 
 }
+
 func main() {
+
+	// Show proper log message after crash
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("The app suffered a panic due to following\n%v", err)
+			log.Println("This is probably related to error mentioned above.")
+			return
+		}
+	}()
 
 	// Setup logger
 	// Here, we will use default log path and log file name
@@ -354,11 +367,10 @@ func main() {
 	createJSONFile()
 
 	// login to rocketchat
-	//chatClient, err := loginRocketChat(config)
-
 	loginResp, err := UpadatedLogin(config, "api/v1")
 
 	if err != nil {
+		log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
 		logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
 	}
 

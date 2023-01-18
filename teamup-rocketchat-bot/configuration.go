@@ -30,7 +30,7 @@ func (config Configuration) String() string {
 		"URL:%s\nUsername:%v\nPassword:%s\nUseSSL:%v\nRoom:%s\nMeetingsCode:%s\nTeamupToken:%s\nRepeatIn:%d\nLogPath:%s\nLogFileName:%s\n",
 		config.URL,
 		config.Username,
-		config.Password,
+		"hidden-for-security-purpose",
 		config.UseSSL,
 		config.Room,
 		"hidden-for-security-purpose",

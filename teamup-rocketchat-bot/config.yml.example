@@ -33,9 +33,9 @@ REPEAT_IN: 5
 
 
 # path to keep logfile
-# default LOG_PATH is /tmp folder
+# default LOG_PATH is /var/log folder
 # It will be overriden if logpath flag is provided to bot while running the bot
-LOG_PATH: /tmp
+LOG_PATH: /var/log
 
 # name for the log file
 # default log file name is teamup-rocket-chat.log
