@@ -1,0 +1,9 @@
+[Unit]
+Description=teamup reminder for rocket chat systemd service.
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/teamup-rocketchat-bot --config /path/to/config.yml
+
+[Install]
+WantedBy=multi-user.target
