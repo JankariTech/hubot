@@ -63,7 +63,7 @@ func createJSONFile() {
 	// but also if content is correct
 	// If not , write down an empty struct
 	if errors.Is(err, os.ErrNotExist) {
-		f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0644) // 0644 = user can read and write, other and groups can read
+		f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0640) // 0640 = user can read and write, groups can read
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -314,7 +314,7 @@ func main() {
 		defaultPath = path.Clean(customLogPath) + "/" + defaultLogFileName
 		isCustomPath = true
 	}
-	defaultLog, err := os.OpenFile(defaultPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // 0644 = user can read and write, other and groups can read
+	defaultLog, err := os.OpenFile(defaultPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640) // 0644 = user can read and write, and groups can read
 	if err != nil {
 		log.Println(err.Error()) // Also print to stdout
 		logger.Fatal(err.Error())
@@ -355,7 +355,7 @@ func main() {
 		log.Println(err.Error()) // Also print to stdout
 		logger.Fatal(err.Error())
 	}
-	log.Printf("The file at %q has been beet set for log output.\n", customPath)
+	log.Printf("The file at %q has been been set for log output.\n", customPath)
 	defer customLog.Close()
 
 	// Change the file for logger
