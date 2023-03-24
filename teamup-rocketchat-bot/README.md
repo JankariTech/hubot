@@ -5,7 +5,49 @@
 ### Currently supports
 
 - Reminding upcoming meeting events
+### Configuration
+- The configuration file should have the `yml` extension and the following properties.
+```bash
+# Url of rocket chat server
+URL: https://rocket.chat
 
+# bot username
+USERNAME: bot
+
+# bot password
+PASSWORD: pass
+
+# Use ssl(https)?
+USE_SSL: TRUE
+
+# channel/room (Currently supports one)
+# Make sure the bot has already been added to the channel
+ROOM: try
+
+# meeting calendar read-only link (calendar-code)
+MEETINGS_TEAMUP: someMeetingCodexxxxx
+
+# teamup token required for api calls
+TOKEN_TEAMUP: someLongCodexxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# run the bot in every X interval (mins)
+# Keep it between 5 to 10
+# default is 5
+REPEAT_IN: 5
+
+# path to keep logfile
+# #default LOG_PATH is /tmp folder
+# It will be overriden if logpath flag is provided to bot while running the bot
+LOG_PATH: /tmp
+
+# name for the log file
+# default log file name is teamup-rocket-chat.log
+LOG_FILE_NAME: teamup-rocket-chat.log
+```
+- The application supports parameters for custom logpath and custom configuraion file path
+- `--config Point to the configuration (config) file. It overrides the default configuration file located at app directory`
+- `--logpath Set the custom logpath. It overrides the log path specified in configuration (config.yml) file`
+- `--help Show help and usage screen`
 ### Run locally
 
 *Note*: Make sure that the bot has already been added to channel or room
@@ -15,10 +57,15 @@
 - Then run the following
 
 ```bash
-go run main.go
+go run .
 ```
 
-**Note**: It will create extra files which are required for smooth functioning of the bot
+- For more application usage, run 
+```bash
+go run . --help
+```
+
+**Note**: It will create extra files which are required for smooth functioning of the bot. By default, log file will be created at `/tmp` folder with name `teamup-rocketchat.log`
 
 ### Build for cloud or other targets
 

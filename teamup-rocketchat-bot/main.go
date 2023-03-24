@@ -6,25 +6,36 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"flag"
+
 	"github.com/badkaktus/gorocket"
 	"github.com/go-resty/resty/v2"
-	"github.com/go-yaml/yaml"
 )
 
-const fileName = "config.yml"
+const defaultConfigFileName = "config.yml"
 
 var ErrLogin = errors.New("the login was not successfull most likely due to invalid credentails")
 
-const logFile = "latest.log"
+const defaultLogFilePath = "/var/log"
+const defaultLogFileName = "teamup-rocket-chat.log"
 
-const eventsTrackerFile = "events_tracker.json"
+const eventsTrackerFile = "/var/cache/events_tracker.json"
 
-// Global logger
+const defaultRepeatIn = 5
+
+const botPrefix = "TEAMUP-ROCKETCHAT-BOT "
+
+var customLogPath = ""
+
+var customConfigFile = ""
+
+// Global logger for writting to log file
 var logger *log.Logger
 
 // Wrapper struct to keep track of notified events
@@ -52,7 +63,7 @@ func createJSONFile() {
 	// but also if content is correct
 	// If not , write down an empty struct
 	if errors.Is(err, os.ErrNotExist) {
-		f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0644) // 0644 = user can read and write, other and groups can read
+		f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0640) // 0640 = user can read and write, groups can read
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -152,19 +163,6 @@ func writeToJSONFile(day, eventID, startTime string) {
 	f.Close()
 }
 
-// Configuration holds different options
-// required to run the bot
-type Configuration struct {
-	URL          string `yaml:"URL"`
-	Username     string `yaml:"USERNAME"`
-	Password     string `yaml:"PASSWORD"`
-	UseSSL       bool   `yaml:"USE_SSL"`
-	Room         string `yaml:"ROOM"`
-	MeetingsCode string `yaml:"MEETINGS_TEAMUP"`
-	TeamupToken  string `yaml:"TOKEN_TEAMUP"`
-	RepeatIn     int    `yaml:"REPEAT_IN"`
-}
-
 type TeamupEvent struct {
 	ID             string        `json:"id"`
 	SeriesID       interface{}   `json:"series_id"`
@@ -214,7 +212,7 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 
 		dayEvents := readFromJSONFile(today)
 
-		fmt.Println(dayEvents)
+		fmt.Println(dayEvents) // TODO: used for inspection
 		var futureEvents []TeamupEvent
 		if len(dayEvents.EventIDs) > 0 {
 			futureEvents = getFutureEvents(events, dayEvents.EventIDs)
@@ -242,8 +240,11 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 			fmt.Println("Trying to send the following messge currently:\n", finalMsg)
 			msgSent, err := chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: finalMsg})
 			if err != nil {
-				logger.Println(err)
+				logger.Printf("Failed to send the message due to following error:\n%s", err.Error())
+				log.Printf("Failed to send the message due to following error:\n%s", err.Error()) // Print to stdout
+				return
 			}
+
 			// For checking message sent status
 			fmt.Println("Message send status: ", msgSent.Success, msgSent.Error)
 		}
@@ -255,37 +256,121 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 	}
 }
 
+var logOutput string // for initial output
+func init() {
+	// Set the usage for printing usage info
+	flag.Usage = displayHelpMessageWithoutBanner
+	flag.StringVar(&customConfigFile, "config", "", "Point to the configuration (config) file. It overrides the default configuration file located at app directory")
+	flag.StringVar(&customLogPath, "logpath", "", "Set the custom logpath. It overrides the log path specified in configuration (config.yml) file")
+
+	flag.Parse()
+	log.SetPrefix(botPrefix)
+	// If no flags are provided, use defaults
+	fmt.Println(bannerText) // Print the banner, for some  cli awesomeness
+	if len(customConfigFile) == 0 && len(customLogPath) == 0 {
+		customConfigFile = defaultConfigFileName // Set the default config.yml if no parameter was provided for custom config
+		logOutput = "No options specified. Looking for configuration at current directory. Directory for log output will be set at location specified in configuration."
+	} else {
+
+		if len(customConfigFile) == 0 {
+			customConfigFile = defaultConfigFileName
+			logOutput = "Looking for configuration at current directory."
+		} else {
+			logOutput = "Looking for configuration at \"" + customConfigFile + "\"."
+		}
+
+		if len(customLogPath) == 0 {
+			logOutput += " Setting directory specified by configuration for log output."
+		} else {
+			logOutput += " Setting \"" + customLogPath + "\" directory specified by configuration for log output."
+
+		}
+
+	}
+	log.Println(logOutput) // Print for the stdout only
+
+}
+
 func main() {
 
+	// Show proper log message after crash
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("The app suffered a panic due to following\n%v", err)
+			log.Println("This is probably related to error mentioned above.")
+			return
+		}
+	}()
+
 	// Setup logger
-	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // 0644 = user can read and write, other and groups can read
+	// Here, we will use default log path and log file name
+	// And only change to provided input log path after validation
+	var defaultPath string
+	// has CustomPath been used
+	var isCustomPath bool = false
+	if len(customLogPath) == 0 {
+		defaultPath = defaultLogFilePath + "/" + defaultLogFileName
+	} else {
+		defaultPath = path.Clean(customLogPath) + "/" + defaultLogFileName
+		isCustomPath = true
+	}
+	defaultLog, err := os.OpenFile(defaultPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0640) // 0644 = user can read and write, and groups can read
 	if err != nil {
+		log.Println(err.Error()) // Also print to stdout
 		logger.Fatal(err.Error())
 	}
 
 	//defer to close when you're done with it
-	defer f.Close()
+	defer defaultLog.Close()
 
 	// set this logger to the global variable
-	logger = log.New(f, "TEAMUP-ROCKETCHAT-BOT ", log.Flags())
+	logger = log.New(defaultLog, botPrefix, log.Flags())
 
-	config, err := readConfig()
+	config, err := readConfig(customConfigFile, isCustomPath)
 
 	// The app will exit if any errors while reading configuration file
 	if err != nil {
-		logger.Fatalln("Error while reading configuration file. Please check the error.\n", err.Error())
+		log.Printf("Error while reading configuration file at %q. Please check the error.\n%v\n", customConfigFile, err.Error())    // Also print to stdout
+		logger.Printf("Error while reading configuration file at %q. Please check the error.\n%v\n", customConfigFile, err.Error()) // Also print to stdout
+
+		// if no config parameter was provided and default config.yml could not be read
+		if len(customConfigFile) == 0 {
+			log.Println("No config parameter was mentioned and config.yml at appication directory could not read. Please check application usage.")
+			logger.Println("No config parameter was mentioned and config.yml at appication directory could not read. Please check application usage.")
+		}
+		logger.Fatalln("Application terminated")
 	}
 
-	logger.Println("Read the following configuration", config)
-	// Create json file
+	var customPath string
+	// Override the config's pointed log path if provided from cli
+	if len(customLogPath) > 0 {
+		customPath = path.Clean(customLogPath) + "/" + config.LogFileName
+
+	} else {
+		customPath = path.Clean(config.LogPath) + "/" + config.LogFileName
+	}
+	customLog, err := os.OpenFile(customPath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644) // 0644 = user can read and write, other and groups can read
+
+	if err != nil {
+		log.Println(err.Error()) // Also print to stdout
+		logger.Fatal(err.Error())
+	}
+	log.Printf("The file at %q has been been set for log output.\n", customPath)
+	defer customLog.Close()
+
+	// Change the file for logger
+	logger.SetOutput(customLog)
+	logger.Println(logOutput) // Initial output for custom log file
+	logger.Println("Read the following configuration\n", config)
+
+	// Create json file if does not exist
 	createJSONFile()
 
 	// login to rocketchat
-	//chatClient, err := loginRocketChat(config)
-
 	loginResp, err := UpadatedLogin(config, "api/v1")
 
 	if err != nil {
+		log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
 		logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
 	}
 
@@ -319,29 +404,6 @@ func main() {
 	// Wait for the goroutine to complete
 	wg.Wait()
 
-}
-
-// readConfig reads config.yml files
-// and returns config or
-// corresponding error if any
-func readConfig() (*Configuration, error) {
-	config := Configuration{}
-
-	yamlData, err := os.ReadFile(fileName)
-
-	// Check for errors
-	if err != nil {
-		return nil, err
-	}
-
-	// err = yaml.Unmarshal(yamlData, &config)
-	err = yaml.UnmarshalStrict(yamlData, &config)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &config, nil
 }
 
 func UpadatedLogin(config *Configuration, apiVersion string) (*UpdatedLoginResponse, error) {
