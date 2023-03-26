@@ -6,6 +6,7 @@ const projectName = 'Current: QA/CI/TestAutomation'
 const fastLaneColumnName = 'Fastlane'
 const intervalInS = 3600
 const room = 'developers'
+const roomForErrors = 'hubotIssue'
 const teamupCalendarKey = 'ks1c2vhnot2ttfvawo'
 const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
 
@@ -16,7 +17,7 @@ module.exports = robot =>
   setInterval(() => {
     robot.error(function (err, res) {
       robot.logger.error(err)
-      robot.send({room: room}, `there is an issue with the fastlane bot '${err}'`)
+      robot.send({room: roomForErrors}, `there is an issue with the fastlane bot '${err}'`)
     })
     robot.http(`https://api.github.com/orgs/${organisation}/projects`)
       .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
