@@ -10,11 +10,14 @@ const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
 
 const interval = intervalInS * 1000
 const auth = Buffer.from(`${githubUsername}:${githubToken}`, 'binary').toString('base64')
-
 const GITHUB_GRAPHQL_API_URL = 'https://api.github.com/graphql';
 
-const getNecessaryNode = (response)=>{
-    const node = response.data.data.organization.projectV2.items;
+let endCursor = null
+let hasNextPage = true
+let fastlaneCards = []
+
+const getFastlaneCards = (response)=> {
+    const items = response.data.data.organization.projectV2.items;
     const issueList = [];
 
     node.nodes.forEach(value => {
@@ -24,18 +27,18 @@ const getNecessaryNode = (response)=>{
         const name = nameNode.name
 
         if (title && url && name && name === `${fastLaneColumnName}`) {
-            issueList.push([title,url])
+            issueList.push([title, url])
         }
     })
 
     return [node,issueList]
 }
 
-const generateQuery = (item) => {
+const generateQuery = (itemArg) => {
     return `query {
     organization(login: "${organisation}") {
     projectV2(number: 386) {
-      items(${item}) {
+      items(${itemArg}) {
         totalCount
         nodes {
           content {
@@ -61,19 +64,13 @@ const generateQuery = (item) => {
         }
         pageInfo {
           endCursor
-          startCursor
           hasNextPage
-          hasPreviousPage
         }
       }
     }
   }
 }`
 }
-
-let endCursor = null
-let hasNextPage = true
-let cards = []
 
 module.exports = robot =>
     setInterval(() => {
@@ -86,24 +83,25 @@ module.exports = robot =>
                 robot.http(GITHUB_GRAPHQL_API_URL)
                     .headers({Accept: 'application/json', Authorization: `Basic ${auth}`})
                     .data({query: generateQuery(`first: 30, after: "${endCursor}"`)})
-                    .get()((err, response) => {
+                    .post()((err, response) => {
                         if (err) {
                             robot.emit('error', `problem getting projects list: '${err}'`)
                             return
                         }
-                        const node = getNecessaryNode(response)[0]
+                        const node = getFastlaneCards(response)[0]
                         hasNextPage = node.pageInfo.hasNextPage
                         endCursor = node.pageInfo.endCursor
-                        cards = cards.concat(getNecessaryNode(response)[1])
+                        fastlaneCards = fastlaneCards.concat(getFastlaneCards(response)[1])
                         sendRequest()
                     })
             }
         }
+        sendRequest()
         let text = ''
-        if (cards.length === 1) {
+        if (fastlaneCards.length === 1) {
             text = `is one card`
-        } else if (cards.length > 1) {
-            text = `are ${cards.length} cards`
+        } else if (fastlaneCards.length > 1) {
+            text = `are ${fastlaneCards.length} cards`
         } else {
             return
         }
@@ -128,7 +126,7 @@ module.exports = robot =>
                 }
                 const scrummaster = parsedBody.events[0].title
                 robot.send({room: room}, `${scrummaster} there ${text} in the fastlane`)
-                cards.forEach(items=>{
+                fastlaneCards.forEach(items=>{
                     robot.send({room: room}, items[1])
                 })
             })
