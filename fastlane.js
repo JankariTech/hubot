@@ -1,36 +1,36 @@
-"use strict";
-const githubUsername = process.env.HUBOT_GITHUB_USERNAME;
-const githubToken = process.env.HUBOT_GITHUB_TOKEN;
-const organisation = "owncloud";
-const projectNumber = 386;
-const fastLaneColumnName = "Fastlane";
-const itemsPerRequest = 50; // number of items (issues/PRs) to fetch from the project board
-const intervalInS = 3600;
-const room = "developers";
-const teamupCalendarKey = "ks1c2vhnot2ttfvawo";
-const teamupToken = process.env.HUBOT_TEAMUP_TOKEN;
-const GITHUB_GRAPHQL_API_URL = "https://api.github.com/graphql";
+"use strict"
+const githubUsername = process.env.HUBOT_GITHUB_USERNAME
+const githubToken = process.env.HUBOT_GITHUB_TOKEN
+const organisation = "owncloud"
+const projectNumber = 386
+const fastLaneColumnName = "Fastlane"
+const itemsPerRequest = 50 // number of items (issues/PRs) to fetch from the project board
+const intervalInS = 3600
+const room = "developers"
+const teamupCalendarKey = "ks1c2vhnot2ttfvawo"
+const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
+const GITHUB_GRAPHQL_API_URL = "https://api.github.com/graphql"
 
-const interval = intervalInS * 1000;
+const interval = intervalInS * 1000
 const auth = Buffer.from(`${githubUsername}:${githubToken}`, "binary").toString(
   "base64"
-);
+)
 
-let endCursor = null; // graphql pagination
-const fastlaneCards = [];
+let endCursor = null // graphql pagination
+const fastlaneCards = []
 
 const filterFastlaneCards = (cards) => {
   cards.forEach((card) => {
-    const url = card.content.url;
-    const columnName = card.fieldValueByName.name;
+    const url = card.content.url
+    const columnName = card.fieldValueByName.name
 
     if (url && columnName && columnName === fastLaneColumnName) {
-      fastlaneCards.push(url);
+      fastlaneCards.push(url)
     }
-  });
+  })
 
-  return fastlaneCards;
-};
+  return fastlaneCards
+}
 
 const generateQuery = (itemArg) => {
   return `query {
@@ -59,8 +59,8 @@ const generateQuery = (itemArg) => {
         }
       }
     }
-  }`;
-};
+  }`
+}
 
 const reportFastlaneCards = (robot) =>
   robot
@@ -74,37 +74,37 @@ const reportFastlaneCards = (robot) =>
       })
     )((err, _, body) => {
     if (err) {
-      robot.emit("error", `problem getting projects list: '${err}'`);
-      return;
+      robot.emit("error", `problem getting projects list: '${err}'`)
+      return
     }
-    const parsedBody = JSON.parse(body);
+    const parsedBody = JSON.parse(body)
     if (!parsedBody.data) {
-      robot.emit("error", `Response doesn't have data: '${err}'`);
-      return;
+      robot.emit("error", `Response doesn't have data: '${err}'`)
+      return
     }
 
-    const items = parsedBody.data.organization.projectV2.items;
-    endCursor = items.pageInfo.endCursor;
+    const items = parsedBody.data.organization.projectV2.items
+    endCursor = items.pageInfo.endCursor
 
-    filterFastlaneCards(items.nodes);
+    filterFastlaneCards(items.nodes)
 
     if (items.pageInfo.hasNextPage) {
-      reportFastlaneCards(robot);
+      reportFastlaneCards(robot)
     } else {
-      let text = "";
+      let text = ""
       if (fastlaneCards.length === 1) {
-        text = `is one card`;
+        text = `is one card`
       } else if (fastlaneCards.length > 1) {
-        text = `are ${fastlaneCards.length} cards`;
+        text = `are ${fastlaneCards.length} cards`
       } else {
-        return;
+        return
       }
-      pingScrumMasters(robot, text);
+      pingScrumMasters(robot, text)
     }
-  });
+  })
 
 const pingScrumMasters = (robot, text) => {
-  const dateString = new Date().toISOString().slice(0, 10);
+  const dateString = new Date().toISOString().slice(0, 10)
   robot
     .http(
       `https://api.teamup.com/${teamupCalendarKey}/events?startDate=${dateString}&endDate=${dateString}`
@@ -112,42 +112,42 @@ const pingScrumMasters = (robot, text) => {
     .headers({ "Teamup-Token": teamupToken })
     .get()((err, response, body) => {
     if (err) {
-      robot.emit("error", `problem getting scrummaster: '${err}'`);
-      return;
+      robot.emit("error", `problem getting scrummaster: '${err}'`)
+      return
     }
-    let parsedBody = {};
+    let parsedBody = {}
     try {
-      parsedBody = JSON.parse(body);
+      parsedBody = JSON.parse(body)
     } catch (e) {
-      robot.emit("error", `problem parsing '${body}' as JSON`);
-      return;
+      robot.emit("error", `problem parsing '${body}' as JSON`)
+      return
     }
     if (
       typeof parsedBody.events === "undefined" ||
       parsedBody.events.length === 0
     ) {
-      robot.emit("error", `problem getting scrummaster: '${body}'`);
-      return;
+      robot.emit("error", `problem getting scrummaster: '${body}'`)
+      return
     }
-    const scrummaster = parsedBody.events[0].title;
+    const scrummaster = parsedBody.events[0].title
     // NOTE: Link preview is not shown if there are more than 5 links.
-    const links = fastlaneCards.join("\n");
+    const links = fastlaneCards.join("\n")
     robot.send(
       { room },
       `${scrummaster} there ${text} in the fastlane\n${links}`
-    );
-  });
-};
+    )
+  })
+}
 
 module.exports = (robot) =>
   setInterval(() => {
     robot.error(function (err, res) {
-      robot.logger.error(err);
+      robot.logger.error(err)
       robot.send(
         { room: room },
         `there is an issue with the fastlane bot '${err}'`
-      );
-    });
+      )
+    })
 
-    reportFastlaneCards(robot);
-  }, interval);
+    reportFastlaneCards(robot)
+  }, interval)
