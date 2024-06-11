@@ -22,8 +22,8 @@ const fastlaneCards = []
 
 const filterFastlaneCards = (cards) => {
   cards.forEach((card) => {
-    const url = card.content.url
-    const columnName = card.fieldValueByName.name
+    const url = card?.content?.url
+    const columnName = card?.fieldValueByName?.name
 
     if (url && columnName && columnName === fastLaneColumnName) {
       fastlaneCards.push(url)
