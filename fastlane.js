@@ -2,6 +2,7 @@
 const githubUsername = process.env.HUBOT_GITHUB_USERNAME
 const githubToken = process.env.HUBOT_GITHUB_TOKEN
 const organisation = "owncloud"
+const projectName = "QA/CI/TestAutomation"
 const projectNumber = 386
 const fastLaneColumnName = "Fastlane"
 const itemsPerRequest = 50 // number of items (issues/PRs) to fetch from the project board
@@ -21,8 +22,8 @@ const fastlaneCards = []
 
 const filterFastlaneCards = (cards) => {
   cards.forEach((card) => {
-    const url = card.content.url
-    const columnName = card.fieldValueByName.name
+    const url = card?.content?.url
+    const columnName = card?.fieldValueByName?.name
 
     if (url && columnName && columnName === fastLaneColumnName) {
       fastlaneCards.push(url)
@@ -36,6 +37,7 @@ const generateQuery = (itemArg) => {
   return `query {
     organization(login: "${organisation}"){
       projectV2(number: ${projectNumber}){
+        title
         items(${itemArg}) {
           nodes{
             content{
@@ -78,8 +80,34 @@ const reportFastlaneCards = (robot) =>
       return
     }
     const parsedBody = JSON.parse(body)
+    
+    if (Object.hasOwn(parsedBody, "errors")) {
+      const errorTypes = parsedBody.errors.map((error) => error.type)
+      if (errorTypes.every((type) => type === "INSUFFICIENT_SCOPES")) {
+        robot.emit(
+          "error",
+          `could not find project '${projectName}' . Do you have the right permissions?`
+        )
+        return
+      }
+
+      if (errorTypes.every((type) => type === "NOT_FOUND")) {
+        console.log("I am error")
+        robot.emit(
+          "error",
+          `could not find project'${projectName}' with number ${projectNumber}`
+        )
+        return
+      }
+    }
+
     if (!parsedBody.data) {
       robot.emit("error", `Response doesn't have data: '${err}'`)
+      return
+    }
+
+    if (parsedBody.data.organization.projectV2.title !== projectName) {
+      robot.emit("error", `Project title from response doesn't match`)
       return
     }
 
