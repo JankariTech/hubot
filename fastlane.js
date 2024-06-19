@@ -169,6 +169,8 @@ const pingScrumMasters = (robot, text) => {
 
 module.exports = (robot) =>
   setInterval(() => {
+    endCursor = null
+    fastlaneCards.length = 0
     robot.error(function (err, res) {
       robot.logger.error(err)
       robot.send(
