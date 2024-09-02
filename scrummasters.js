@@ -2,9 +2,9 @@ const teamupCalendarKey = 'ks1c2vhnot2ttfvawo'
 const teamupToken = process.env.HUBOT_TEAMUP_TOKEN
 
 module.exports = (robot) => {
-  robot.error(function (err, res) {
+  robot.error(function (err) {
     robot.logger.error(err)
-    res.send(`there is an issue with the fastlane bot '${err}'`)
+    robot.send(`Error while running scrummaster bot: ${err}`)
   })
   robot.hear(/scrum(\s|-)?master(s)?/gi, (res) => {
     const dateString = new Date().toISOString().slice(0, 10)
@@ -23,7 +23,7 @@ module.exports = (robot) => {
           return
         }
         if (typeof parsedBody.events === 'undefined' || parsedBody.events.length === 0) {
-          robot.emit('error', `problem getting scrummaster: '${body}'`, res)
+          robot.emit('error', `scrummasters not found: '${body}'`)
           return
         }
         const scrummaster = parsedBody.events[0].title
