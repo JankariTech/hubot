@@ -154,7 +154,7 @@ const pingScrumMasters = (robot, text) => {
       typeof parsedBody.events === "undefined" ||
       parsedBody.events.length === 0
     ) {
-      robot.emit("error", `problem getting scrummaster: '${body}'`)
+      robot.emit("error", `scrummasters not found: '${body}'`)
       return
     }
     const scrummaster = parsedBody.events[0].title
@@ -167,17 +167,16 @@ const pingScrumMasters = (robot, text) => {
   })
 }
 
-module.exports = (robot) =>
-  setInterval(() => {
+module.exports = (robot) => {
+  robot.error(function (err) {
+    robot.logger.error(err)
+    robot.send({ room: room }, `Error while running fastlane bot: ${err}`)
+  })
+
+  return setInterval(() => {
     endCursor = null
     fastlaneCards.length = 0
-    robot.error(function (err, res) {
-      robot.logger.error(err)
-      robot.send(
-        { room: room },
-        `there is an issue with the fastlane bot '${err}'`
-      )
-    })
 
     reportFastlaneCards(robot)
   }, interval)
+}
