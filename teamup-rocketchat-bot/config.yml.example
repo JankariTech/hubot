@@ -1,4 +1,4 @@
-# Copy this config.yml.example to config.yml 
+# Copy this config.yml.example to config.yml
 # and edit the following details
 #
 # Donot remove or add fields as the configuration is checked strictly
@@ -40,3 +40,6 @@ LOG_PATH: /var/log
 # name for the log file
 # default log file name is teamup-rocket-chat.log
 LOG_FILE_NAME: teamup-rocket-chat.log
+
+# where are the templates stored
+TEMPLATE_PATH: ./

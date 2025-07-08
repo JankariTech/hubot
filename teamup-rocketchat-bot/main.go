@@ -234,7 +234,7 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 			diff := timeDiffWithNow(event.StartDt)
 			if diff > 10 && diff < 21 {
 				toNotifyEventsIds = append(toNotifyEventsIds, EventIDWithStartTime{event.ID, event.StartDt})
-				message, err := prepareMeetingMsg(event)
+				message, err := prepareMeetingMsg(event, config)
 				if err != nil {
 					logger.Printf("failed to create message due to following error:\n%s", err.Error())
 				}
@@ -540,8 +540,9 @@ func getFutureEvents(events *TeamupEvents, alreadyNotified []EventIDWithStartTim
 
 // prepareMeetingMsg reads a template with the name subcalendarID + .tmpl
 // renders it and returns a string of the message
-func prepareMeetingMsg(event TeamupEvent) (string, error) {
+func prepareMeetingMsg(event TeamupEvent, config *Configuration) (string, error) {
 	templateFile := strconv.Itoa(event.SubcalendarID) + ".tmpl"
+	templateFullPath := path.Join(config.TemplatePath, templateFile)
 	funcMap := template.FuncMap{
 		"NotesInMarkdown": func() string {
 			markdown, _ := htmltomarkdown.ConvertString(event.Notes)
@@ -552,10 +553,11 @@ func prepareMeetingMsg(event TeamupEvent) (string, error) {
 	for i, f := range sprig.FuncMap() {
 		funcMap[i] = f
 	}
+
 	var tmpl *template.Template
 	// Check if the template file exists and is readable
-	if _, err := os.Stat(templateFile); err != nil {
-		logger.Printf("No template with filename '%s' not found, using default template\n", templateFile)
+	if _, err := os.Stat(templateFullPath); err != nil {
+		logger.Printf("No template with filename '%s' not found, using default template\n", templateFullPath)
 		defaultTemplate := "**REMINDER**\n" +
 			"_{{ .Title }}_\n" +
 			"Who: {{ .Who }}\n" +
@@ -568,7 +570,7 @@ func prepareMeetingMsg(event TeamupEvent) (string, error) {
 			return "", err
 		}
 	} else {
-		tmpl, err = template.New(templateFile).Funcs(funcMap).ParseFiles(templateFile)
+		tmpl, err = template.New(templateFile).Funcs(funcMap).ParseFiles(templateFullPath)
 		if err != nil {
 			return "", err
 		}
