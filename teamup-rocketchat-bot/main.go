@@ -556,10 +556,13 @@ func prepareMeetingMsg(event TeamupEvent) (string, error) {
 	// Check if the template file exists and is readable
 	if _, err := os.Stat(templateFile); err != nil {
 		logger.Printf("No template with filename '%s' found, using default template\n", templateFile)
-		defaultTemplate := "{{ .Who }} **{{ .Title }}** will start soon\n" +
-			"Start-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.StartDt) }}**\n" +
-			"let's meet in {{ .Location }}\n" +
-			"{{ (NotesInMarkdown) }}"
+		defaultTemplate := "**REMINDER**\n" +
+			"_{{ .Title }}_\n" +
+			"Who: {{ .Who }}\n" +
+			"Start-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.StartDt) | date \"02 Jan 06 15:04\"}}**\n" +
+			"End-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.EndDt) | date \"02 Jan 06 15:04\"}}**\n" +
+			"Location: {{ .Location }}\n" +
+			"Notes: {{ (NotesInMarkdown) }}"
 		tmpl, err = template.New("default").Funcs(funcMap).Parse(defaultTemplate)
 		if err != nil {
 			return "", err
