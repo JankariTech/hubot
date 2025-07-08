@@ -48,6 +48,19 @@ LOG_FILE_NAME: teamup-rocket-chat.log
 - `--config Point to the configuration (config) file. It overrides the default configuration file located at app directory`
 - `--logpath Set the custom logpath. It overrides the log path specified in configuration (config.yml) file`
 - `--help Show help and usage screen`
+
+#### templates
+Messages can be customized by calendar, for that Go-templates are used.
+1. get the ID of your calendar:
+   1. go to the settings page of teamup
+   2. go to the calendars list
+   3. click on the calendar you want to create a template for
+   4. copy the number at the end of the URL e.g. `123456` of `https://teamup.com/c/xdfesf/jankaritech/settings/calendars/edit/123456`, this is your calendar id
+2. copy `example.tmpl` to `<calendar-id>.tmpl`
+3. [adjust the template](https://pkg.go.dev/text/template). As functions all [sprig](https://masterminds.github.io/sprig/) functions can be used plus `NotesInMarkdown`, which will return the notes converted from HTML to MD.
+4. repeat for every calendar for which you want to have a custom message for
+5. if there is no template found a build in, default template will be used.
+
 ### Run locally
 
 *Note*: Make sure that the bot has already been added to channel or room
