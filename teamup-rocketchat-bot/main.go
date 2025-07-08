@@ -552,13 +552,28 @@ func prepareMeetingMsg(event TeamupEvent) (string, error) {
 	for i, f := range sprig.FuncMap() {
 		funcMap[i] = f
 	}
-	tmpl, err := template.New(templateFile).Funcs(funcMap).ParseFiles(templateFile)
-	if err != nil {
-		return "", err
+	var tmpl *template.Template
+	// Check if the template file exists and is readable
+	if _, err := os.Stat(templateFile); err != nil {
+		logger.Printf("No template with filename '%s' found, using default template\n", templateFile)
+		defaultTemplate := "{{ .Who }} **{{ .Title }}** will start soon\n" +
+			"Start-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.StartDt) }}**\n" +
+			"let's meet in {{ .Location }}\n" +
+			"{{ (NotesInMarkdown) }}"
+		tmpl, err = template.New("default").Funcs(funcMap).Parse(defaultTemplate)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		tmpl, err = template.New(templateFile).Funcs(funcMap).ParseFiles(templateFile)
+		if err != nil {
+			return "", err
+		}
+
 	}
 	var buff bytes.Buffer
 
-	err = tmpl.Execute(&buff, event)
+	err := tmpl.Execute(&buff, event)
 	if err != nil {
 		return "", err
 	}
