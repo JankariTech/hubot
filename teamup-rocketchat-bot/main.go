@@ -555,7 +555,7 @@ func prepareMeetingMsg(event TeamupEvent) (string, error) {
 	var tmpl *template.Template
 	// Check if the template file exists and is readable
 	if _, err := os.Stat(templateFile); err != nil {
-		logger.Printf("No template with filename '%s' found, using default template\n", templateFile)
+		logger.Printf("No template with filename '%s' not found, using default template\n", templateFile)
 		defaultTemplate := "**REMINDER**\n" +
 			"_{{ .Title }}_\n" +
 			"Who: {{ .Who }}\n" +
