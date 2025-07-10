@@ -22,6 +22,7 @@ type Configuration struct {
 	RepeatIn     int    `yaml:"REPEAT_IN"`
 	LogPath      string `yaml:"LOG_PATH"`
 	LogFileName  string `yaml:"LOG_FILE_NAME"`
+	TemplatePath string `yaml:"TEMPLATE_PATH"`
 }
 
 // Prints beatiful

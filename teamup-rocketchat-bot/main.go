@@ -1,19 +1,23 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"path"
-	"regexp"
+	"strconv"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"flag"
 
+	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/badkaktus/gorocket"
 	"github.com/go-resty/resty/v2"
 )
@@ -229,7 +233,11 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 			diff := timeDiffWithNow(event.StartDt)
 			if diff > 10 && diff < 21 {
 				toNotifyEventsIds = append(toNotifyEventsIds, EventIDWithStartTime{event.ID, event.StartDt})
-				toSendMsgs = append(toSendMsgs, prepareMeetingMsg(event))
+				message, err := prepareMeetingMsg(event, config)
+				if err != nil {
+					logger.Printf("failed to create message due to following error:\n%s", err.Error())
+				}
+				toSendMsgs = append(toSendMsgs, message)
 			}
 		}
 
@@ -529,50 +537,52 @@ func getFutureEvents(events *TeamupEvents, alreadyNotified []EventIDWithStartTim
 	return futureEvents
 }
 
-// prepareMeetingMsg prepares message to be
-// sent for the upcoming event
-// with following format
-//
-// @mentions *Event title* will start soon
-// Start-time: 10:00
-// let's meet in:
-// Some description
-// of the meeting
-func prepareMeetingMsg(event TeamupEvent) string {
-	title := event.Title
-	who := event.Who
-	locale, _ := time.LoadLocation("Asia/Kathmandu")
-	startTime, _ := time.Parse(time.RFC3339, event.StartDt) // Parse the time in locale time
-	location := event.Location
-	notes := event.Notes
-	description := strings.Split(notes, "\n")
-	descSlice := make([]string, 0)
-
-	// Catches the html tags present
-	removeTag := regexp.MustCompile(`<\/?[^>]+(>|$)`) // Create a global func for this
-	// Catches the whole line containing Who: @mention1 @mention2
-	removeMention := regexp.MustCompile(`^(Who|who):\s*@.*$`) // Create a global func for this
-
-	// Trim the white space, remove html tags, remove "Who: @"
-	for i := 0; i < len(description); i++ {
-		str := strings.TrimSpace(description[i])
-		str = removeTag.ReplaceAllString(str, "")
-		str = removeMention.ReplaceAllString(str, "")
-		// Only add the non-empty lines
-		if len(str) > 0 {
-			descSlice = append(descSlice, str)
-		}
+// prepareMeetingMsg reads a template with the name subcalendarID + .tmpl
+// renders it and returns a string of the message
+func prepareMeetingMsg(event TeamupEvent, config *Configuration) (string, error) {
+	templateFile := strconv.Itoa(event.SubcalendarID) + ".tmpl"
+	templateFullPath := path.Join(config.TemplatePath, templateFile)
+	funcMap := template.FuncMap{
+		"NotesInMarkdown": func() string {
+			markdown, _ := htmltomarkdown.ConvertString(event.Notes)
+			return markdown
+		},
 	}
-	finalDesc := strings.Join(descSlice, "\n")
+	// add all the functions from sprig
+	for i, f := range sprig.FuncMap() {
+		funcMap[i] = f
+	}
 
-	msg := fmt.Sprintf("%s *%s* will start soon\nStart-time: *%s*\nlet's meet in: %s\n%s",
-		who,
-		title,
-		strings.Split(startTime.In(locale).String(), "+")[0],
-		location,
-		finalDesc,
-	)
-	return msg
+	var tmpl *template.Template
+	// Check if the template file exists and is readable
+	if _, err := os.Stat(templateFullPath); err != nil {
+		logger.Printf("No template with filename '%s' not found, using default template\n", templateFullPath)
+		defaultTemplate := "**REMINDER**\n" +
+			"_{{ .Title }}_\n" +
+			"Who: {{ .Who }}\n" +
+			"Start-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.StartDt) | date \"02 Jan 06 15:04\"}}**\n" +
+			"End-time: **{{ toDate \"2006-01-02T15:04:05Z07:00\" (.EndDt) | date \"02 Jan 06 15:04\"}}**\n" +
+			"Location: {{ .Location }}\n" +
+			"Notes: {{ (NotesInMarkdown) }}"
+		tmpl, err = template.New("default").Funcs(funcMap).Parse(defaultTemplate)
+		if err != nil {
+			return "", err
+		}
+	} else {
+		tmpl, err = template.New(templateFile).Funcs(funcMap).ParseFiles(templateFullPath)
+		if err != nil {
+			return "", err
+		}
+
+	}
+	var buff bytes.Buffer
+
+	err := tmpl.Execute(&buff, event)
+	if err != nil {
+		return "", err
+	}
+
+	return buff.String(), nil
 }
 
 // Some struct definitions

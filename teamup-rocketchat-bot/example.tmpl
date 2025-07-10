@@ -1,0 +1,5 @@
+{{ .Who }} **{{ .Title }}** will start soon
+Start-time: **{{ dateInZone "02 Jan 06 15:04" (toDate "2006-01-02T15:04:05Z07:00" (.StartDt)) "Asia/Kathmandu" }}**
+let's meet in {{ .Location }}
+
+{{ (NotesInMarkdown) }}
