@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,6 +21,9 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/badkaktus/gorocket"
 	"github.com/go-resty/resty/v2"
+	"maunium.net/go/mautrix"
+	"maunium.net/go/mautrix/event"
+	"maunium.net/go/mautrix/format"
 )
 
 const defaultConfigFileName = "config.yml"
@@ -232,7 +236,7 @@ func checkForMeetings(config *Configuration) string {
 		toSendMsgs := []string{}
 		for _, event := range futureEvents {
 			diff := timeDiffWithNow(event.StartDt)
-			if diff > 10 && diff < 21 {
+			if diff > 1 && diff < 21 {
 				toNotifyEventsIds = append(toNotifyEventsIds, EventIDWithStartTime{event.ID, event.StartDt})
 				message, err := prepareMeetingMsg(event, config)
 				if err != nil {
@@ -365,7 +369,10 @@ func main() {
 	// run this once before cron job
 	message := checkForMeetings(config)
 	if message != "" {
-		sendMessage(config, message)
+		err := sendMessage(config, message)
+		if err != nil {
+			logger.Fatal(err.Error())
+		}
 	}
 
 	// Ticker will send a signal at each specified time period
@@ -382,7 +389,10 @@ func main() {
 			// check for meeting
 			message := checkForMeetings(config)
 			if message != "" {
-				sendMessage(config, message)
+				err := sendMessage(config, message)
+				if err != nil {
+					logger.Fatal(err.Error())
+				}
 			}
 		}
 		wg.Done()
@@ -394,34 +404,54 @@ func main() {
 
 }
 
-func sendMessage(config *Configuration, message string) {
+func sendMessage(config *Configuration, message string) error {
 	if len(message) > 0 {
-		// login to rocketchat
-		loginResp, err := UpadatedLogin(config, "api/v1")
+		fmt.Println("Trying to send the following message:\n", message)
 
-		if err != nil {
-			log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
-			logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
+		if config.Protocol == "rocket.chat" {
+			// login to rocketchat
+			loginResp, err := LoginToRocketChat(config, "api/v1")
+
+			if err != nil {
+				return err
+			}
+			userIDOpt := gorocket.WithUserID(loginResp.Data.UserID)
+			xTokenOpt := gorocket.WithXToken(loginResp.Data.AuthToken)
+
+			chatClient := gorocket.NewWithOptions(config.URL, userIDOpt, xTokenOpt)
+			_, err = chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: message})
+			if err != nil {
+				return err
+			}
+		} else if config.Protocol == "matrix" {
+			client, err := mautrix.NewClient(config.URL, "", "")
+			if err != nil {
+				return fmt.Errorf("could not create a new matrix client: %w", err)
+			}
+			_, err = client.Login(context.TODO(), &mautrix.ReqLogin{
+				Type:             mautrix.AuthTypePassword,
+				Identifier:       mautrix.UserIdentifier{Type: mautrix.IdentifierTypeUser, User: config.Username},
+				Password:         config.Password,
+				StoreCredentials: true,
+			})
+			if err != nil {
+				return fmt.Errorf("could not log in to matrix server: %s %s  %w", config.Username, config.URL, err)
+			}
+			roomSum, err := client.GetRoomSummary(context.TODO(), config.Room)
+			if err != nil {
+				return err
+			}
+			content := format.RenderMarkdown(message, true, false)
+			_, err = client.SendMessageEvent(context.TODO(), roomSum.RoomID, event.EventMessage, &content)
+			if err != nil {
+				return fmt.Errorf("could not send message to matrix server: %w", err)
+			}
 		}
-		userIDOpt := gorocket.WithUserID(loginResp.Data.UserID)
-		xTokenOpt := gorocket.WithXToken(loginResp.Data.AuthToken)
-
-		chatClient := gorocket.NewWithOptions(config.URL, userIDOpt, xTokenOpt)
-		// See what msg will be sent
-		fmt.Println("Trying to send the following messge currently:\n", message)
-		msgSent, err := chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: message})
-		if err != nil {
-			logger.Printf("Failed to send the message due to following error:\n%s", err.Error())
-			log.Printf("Failed to send the message due to following error:\n%s", err.Error()) // Print to stdout
-			return
-		}
-
-		// For checking message sent status
-		fmt.Println("Message send status: ", msgSent.Success, msgSent.Error)
 	}
+	return nil
 }
 
-func UpadatedLogin(config *Configuration, apiVersion string) (*UpdatedLoginResponse, error) {
+func LoginToRocketChat(config *Configuration, apiVersion string) (*UpdatedLoginResponse, error) {
 
 	loginPayload := gorocket.LoginPayload{
 		User:     config.Username,

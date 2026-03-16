@@ -13,6 +13,7 @@ import (
 // required to run the bot
 type Configuration struct {
 	URL          string `yaml:"URL"`
+	Protocol     string `yaml:"PROTOCOL"`
 	Username     string `yaml:"USERNAME"`
 	Password     string `yaml:"PASSWORD"`
 	UseSSL       bool   `yaml:"USE_SSL"`
@@ -53,9 +54,9 @@ func isUrl(str string) bool {
 // checkValidity checks the validity of the loaded configuration
 // and returns error if any field value is not valid
 func (config *Configuration) checkValidity(isCustomPath bool) (*Configuration, error) {
-	if !isUrl(config.URL) {
-		return nil, fmt.Errorf("invalid URL: %s", config.URL)
-	}
+	//if !isUrl(config.URL) {
+	//	return nil, fmt.Errorf("invalid URL: %s", config.URL)
+	//}
 
 	if len(config.Username) == 0 {
 		return nil, fmt.Errorf("empty USERNAME field")
@@ -63,6 +64,10 @@ func (config *Configuration) checkValidity(isCustomPath bool) (*Configuration, e
 
 	if len(config.Password) == 0 {
 		return nil, fmt.Errorf("empty PASSWORD field")
+	}
+
+	if config.Protocol != "rocket.chat" && config.Protocol != "matrix" {
+		return nil, fmt.Errorf("invalid PROTOCOL: %s. Only 'rocket.chat' or 'matrix' are allowed", config.Protocol)
 	}
 
 	if len(config.Room) == 0 {
