@@ -198,7 +198,7 @@ type TeamupEvents struct {
 	Timestamp int           `json:"timestamp"`
 }
 
-func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
+func checkForMeetings(config *Configuration) string {
 
 	locale, _ := time.LoadLocation("Asia/Kathmandu")
 	now := time.Now().In(locale)
@@ -244,25 +244,12 @@ func checkForMeetings(config *Configuration, chatClient *gorocket.Client) {
 
 		finalMsg := strings.Join(toSendMsgs, ("\n" + strings.Repeat("-", 100) + "\n"))
 
-		if len(finalMsg) > 0 {
-			// See what msg will be sent
-			fmt.Println("Trying to send the following messge currently:\n", finalMsg)
-			msgSent, err := chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: finalMsg})
-			if err != nil {
-				logger.Printf("Failed to send the message due to following error:\n%s", err.Error())
-				log.Printf("Failed to send the message due to following error:\n%s", err.Error()) // Print to stdout
-				return
-			}
-
-			// For checking message sent status
-			fmt.Println("Message send status: ", msgSent.Success, msgSent.Error)
-		}
-
 		for _, val := range toNotifyEventsIds {
 			writeToJSONFile(today, val.EventID, val.StartTime)
 		}
-
+		return finalMsg
 	}
+	return ""
 }
 
 var logOutput string // for initial output
@@ -375,21 +362,11 @@ func main() {
 	// Create json file if does not exist
 	createJSONFile()
 
-	// login to rocketchat
-	loginResp, err := UpadatedLogin(config, "api/v1")
-
-	if err != nil {
-		log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
-		logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
-	}
-
-	userIDOpt := gorocket.WithUserID(loginResp.Data.UserID)
-	xTokenOpt := gorocket.WithXToken(loginResp.Data.AuthToken)
-
-	chatClient := gorocket.NewWithOptions(config.URL, userIDOpt, xTokenOpt)
-
 	// run this once before cron job
-	checkForMeetings(config, chatClient)
+	message := checkForMeetings(config)
+	if message != "" {
+		sendMessage(config, message)
+	}
 
 	// Ticker will send a signal at each specified time period
 	ticker := time.NewTicker(time.Duration(config.RepeatIn) * time.Minute)
@@ -403,8 +380,10 @@ func main() {
 		// Will run each time the ticker ticks, .i.e each 10 mins
 		for range ticker.C {
 			// check for meeting
-			checkForMeetings(config, chatClient)
-
+			message := checkForMeetings(config)
+			if message != "" {
+				sendMessage(config, message)
+			}
 		}
 		wg.Done()
 
@@ -413,6 +392,33 @@ func main() {
 	// Wait for the goroutine to complete
 	wg.Wait()
 
+}
+
+func sendMessage(config *Configuration, message string) {
+	if len(message) > 0 {
+		// login to rocketchat
+		loginResp, err := UpadatedLogin(config, "api/v1")
+
+		if err != nil {
+			log.Println("Error while trying to login. Please check the error.\n", err.Error()) // Print to stdout
+			logger.Fatalln("Error while trying to login. Please check the error.\n", err.Error())
+		}
+		userIDOpt := gorocket.WithUserID(loginResp.Data.UserID)
+		xTokenOpt := gorocket.WithXToken(loginResp.Data.AuthToken)
+
+		chatClient := gorocket.NewWithOptions(config.URL, userIDOpt, xTokenOpt)
+		// See what msg will be sent
+		fmt.Println("Trying to send the following messge currently:\n", message)
+		msgSent, err := chatClient.PostMessage(&gorocket.Message{Channel: config.Room, Text: message})
+		if err != nil {
+			logger.Printf("Failed to send the message due to following error:\n%s", err.Error())
+			log.Printf("Failed to send the message due to following error:\n%s", err.Error()) // Print to stdout
+			return
+		}
+
+		// For checking message sent status
+		fmt.Println("Message send status: ", msgSent.Success, msgSent.Error)
+	}
 }
 
 func UpadatedLogin(config *Configuration, apiVersion string) (*UpdatedLoginResponse, error) {
