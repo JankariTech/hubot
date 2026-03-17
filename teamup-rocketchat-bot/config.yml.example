@@ -48,5 +48,5 @@ LOG_FILE_NAME: teamup-rocket-chat.log
 # where are the templates stored
 TEMPLATE_PATH: ./
 
-# where to track the events that are already got checked
+# where to track the events that have already been checked
 EVENTS_TRACKER_FILE = "/var/cache/events_tracker.json"
