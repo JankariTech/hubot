@@ -4,8 +4,11 @@
 # Donot remove or add fields as the configuration is checked strictly
 # Doing so will fail the app to start
 
-# Url of rocket chat server
+# Url of the chat server
 URL: https://rocket.chat:5000
+
+# What kind of chat server are you running? `rocket.chat` or `matrix`
+PROTOCOL: matrix
 
 # bot username
 USERNAME: bot
@@ -18,6 +21,7 @@ USE_SSL: TRUE
 
 # channel/room (Currently supports one)
 # Make sure the bot has already been added to the channel
+# for matrix this has to be the roomId starting with "!"
 ROOM: general
 
 # meeting calendar read-only link (calendar-code)
@@ -43,3 +47,6 @@ LOG_FILE_NAME: teamup-rocket-chat.log
 
 # where are the templates stored
 TEMPLATE_PATH: ./
+
+# where to track the events that are already got checked
+EVENTS_TRACKER_FILE = "/var/cache/events_tracker.json"

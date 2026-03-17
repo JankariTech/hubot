@@ -12,18 +12,19 @@ import (
 // Configuration holds different options
 // required to run the bot
 type Configuration struct {
-	URL          string `yaml:"URL"`
-	Protocol     string `yaml:"PROTOCOL"`
-	Username     string `yaml:"USERNAME"`
-	Password     string `yaml:"PASSWORD"`
-	UseSSL       bool   `yaml:"USE_SSL"`
-	Room         string `yaml:"ROOM"`
-	MeetingsCode string `yaml:"MEETINGS_TEAMUP"`
-	TeamupToken  string `yaml:"TOKEN_TEAMUP"`
-	RepeatIn     int    `yaml:"REPEAT_IN"`
-	LogPath      string `yaml:"LOG_PATH"`
-	LogFileName  string `yaml:"LOG_FILE_NAME"`
-	TemplatePath string `yaml:"TEMPLATE_PATH"`
+	URL               string `yaml:"URL"`
+	Protocol          string `yaml:"PROTOCOL"`
+	Username          string `yaml:"USERNAME"`
+	Password          string `yaml:"PASSWORD"`
+	UseSSL            bool   `yaml:"USE_SSL"`
+	Room              string `yaml:"ROOM"`
+	MeetingsCode      string `yaml:"MEETINGS_TEAMUP"`
+	TeamupToken       string `yaml:"TOKEN_TEAMUP"`
+	RepeatIn          int    `yaml:"REPEAT_IN"`
+	LogPath           string `yaml:"LOG_PATH"`
+	LogFileName       string `yaml:"LOG_FILE_NAME"`
+	TemplatePath      string `yaml:"TEMPLATE_PATH"`
+	EventsTrackerFile string `yaml:"EVENTS_TRACKER_FILE"`
 }
 
 // Prints beatiful
@@ -54,9 +55,9 @@ func isUrl(str string) bool {
 // checkValidity checks the validity of the loaded configuration
 // and returns error if any field value is not valid
 func (config *Configuration) checkValidity(isCustomPath bool) (*Configuration, error) {
-	//if !isUrl(config.URL) {
-	//	return nil, fmt.Errorf("invalid URL: %s", config.URL)
-	//}
+	if !isUrl(config.URL) {
+		return nil, fmt.Errorf("invalid URL: %s", config.URL)
+	}
 
 	if len(config.Username) == 0 {
 		return nil, fmt.Errorf("empty USERNAME field")
@@ -80,6 +81,10 @@ func (config *Configuration) checkValidity(isCustomPath bool) (*Configuration, e
 
 	if len(config.TeamupToken) == 0 {
 		return nil, fmt.Errorf("empty TOKEN_TEAMUP field")
+	}
+
+	if len(config.EventsTrackerFile) == 0 {
+		return nil, fmt.Errorf("empty EVENTS_TRACKER_FILE field")
 	}
 
 	if len(config.Room) == 0 {

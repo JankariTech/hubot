@@ -24,6 +24,7 @@ import (
 	"maunium.net/go/mautrix"
 	"maunium.net/go/mautrix/event"
 	"maunium.net/go/mautrix/format"
+	"maunium.net/go/mautrix/id"
 )
 
 const defaultConfigFileName = "config.yml"
@@ -32,8 +33,6 @@ var ErrLogin = errors.New("the login was not successfull most likely due to inva
 
 const defaultLogFilePath = "/var/log"
 const defaultLogFileName = "teamup-rocket-chat.log"
-
-const eventsTrackerFile = "/var/cache/events_tracker.json"
 
 const defaultRepeatIn = 5
 
@@ -62,8 +61,8 @@ type AllEvents struct {
 }
 
 // Create events tracking json file if it does not exist
-func createJSONFile() {
-	_, err := os.Stat(eventsTrackerFile)
+func createJSONFile(config *Configuration) {
+	_, err := os.Stat(config.EventsTrackerFile)
 
 	// TODO: Improvement
 	// Add better logic
@@ -71,7 +70,7 @@ func createJSONFile() {
 	// but also if content is correct
 	// If not , write down an empty struct
 	if errors.Is(err, os.ErrNotExist) {
-		f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0640) // 0640 = user can read and write, groups can read
+		f, err := os.OpenFile(config.EventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0640) // 0640 = user can read and write, groups can read
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -90,9 +89,9 @@ func createJSONFile() {
 }
 
 // reads the events that were already notifed for the given day
-func readFromJSONFile(day string) EventsForDay {
+func readFromJSONFile(day string, config *Configuration) EventsForDay {
 	var dayEvents *EventsForDay
-	data, err := os.ReadFile(eventsTrackerFile)
+	data, err := os.ReadFile(config.EventsTrackerFile)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -118,9 +117,9 @@ func readFromJSONFile(day string) EventsForDay {
 
 // writes to the events tracker json file
 // inside the provided day's object
-func writeToJSONFile(day, eventID, startTime string) {
+func writeToJSONFile(day, eventID, startTime string, config *Configuration) {
 
-	data, err := os.ReadFile(eventsTrackerFile)
+	data, err := os.ReadFile(config.EventsTrackerFile)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -154,7 +153,7 @@ func writeToJSONFile(day, eventID, startTime string) {
 
 	}
 
-	f, err := os.OpenFile(eventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0644) // 0644 = user can read and write, other and groups can read
+	f, err := os.OpenFile(config.EventsTrackerFile, os.O_WRONLY|os.O_CREATE, 0644) // 0644 = user can read and write, other and groups can read
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -219,7 +218,7 @@ func checkForMeetings(config *Configuration) string {
 		logger.Println("No meetings found today!!!")
 	} else {
 
-		dayEvents := readFromJSONFile(today)
+		dayEvents := readFromJSONFile(today, config)
 
 		fmt.Println(dayEvents) // TODO: used for inspection
 		var futureEvents []TeamupEvent
@@ -249,7 +248,7 @@ func checkForMeetings(config *Configuration) string {
 		finalMsg := strings.Join(toSendMsgs, ("\n" + strings.Repeat("-", 100) + "\n"))
 
 		for _, val := range toNotifyEventsIds {
-			writeToJSONFile(today, val.EventID, val.StartTime)
+			writeToJSONFile(today, val.EventID, val.StartTime, config)
 		}
 		return finalMsg
 	}
@@ -364,7 +363,7 @@ func main() {
 	logger.Println("Read the following configuration\n", config)
 
 	// Create json file if does not exist
-	createJSONFile()
+	createJSONFile(config)
 
 	// run this once before cron job
 	message := checkForMeetings(config)
@@ -435,16 +434,13 @@ func sendMessage(config *Configuration, message string) error {
 				StoreCredentials: true,
 			})
 			if err != nil {
-				return fmt.Errorf("could not log in to matrix server: %s %s  %w", config.Username, config.URL, err)
+				return fmt.Errorf("could not log in to matrix server: %w", err)
 			}
-			roomSum, err := client.GetRoomSummary(context.TODO(), config.Room)
-			if err != nil {
-				return err
-			}
+
 			content := format.RenderMarkdown(message, true, false)
-			_, err = client.SendMessageEvent(context.TODO(), roomSum.RoomID, event.EventMessage, &content)
+			_, err = client.SendMessageEvent(context.TODO(), id.RoomID(config.Room), event.EventMessage, &content)
 			if err != nil {
-				return fmt.Errorf("could not send message to matrix server: %w", err)
+				return fmt.Errorf("could not send a message to matrix server: %w", err)
 			}
 		}
 	}
