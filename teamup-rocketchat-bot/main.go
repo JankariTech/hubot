@@ -438,6 +438,20 @@ func sendMessage(config *Configuration, message string) error {
 			}
 
 			content := format.RenderMarkdown(message, true, false)
+
+			// Explicitly mention the users or the room as required by the protocol
+			// https://spec.matrix.org/v1.17/client-server-api/#user-and-room-mentions
+			words := strings.Fields(content.Body)
+			for _, word := range words {
+				if strings.HasPrefix(word, "@") {
+					if word == "@room" || word == "@all" {
+						content.Mentions.Room = true
+					} else if !content.Mentions.Has(id.UserID(word)) {
+						content.Mentions.Add(id.UserID(word))
+					}
+				}
+			}
+
 			_, err = client.SendMessageEvent(context.TODO(), id.RoomID(config.Room), event.EventMessage, &content)
 			if err != nil {
 				return fmt.Errorf("could not send a message to matrix server: %w", err)
