@@ -235,7 +235,7 @@ func checkForMeetings(config *Configuration) string {
 		toSendMsgs := []string{}
 		for _, event := range futureEvents {
 			diff := timeDiffWithNow(event.StartDt)
-			if diff > 10 && diff < 21 {
+			if diff > 0 && diff <= int64(config.RepeatIn*3) {
 				toNotifyEventsIds = append(toNotifyEventsIds, EventIDWithStartTime{event.ID, event.StartDt})
 				message, err := prepareMeetingMsg(event, config)
 				if err != nil {
